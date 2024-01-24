@@ -5,15 +5,15 @@ import pandas as pd
 import numpy as np
 import pba
 
-from CboxBayes import CboxBayes
+from CboxBayes import CboxBayes, likelihoods
 
 from sklearn.linear_model import LogisticRegression
 
 #%%
-num_samples = 200
-num_features = 3
+num_samples = 2000
+num_features = 2
 p = 0.5
-rng = np.random.default_rng(1)
+rng = np.random.default_rng(1234)
 
 results = pd.Series(rng.random(size = (num_samples,))>p)
 
@@ -24,28 +24,28 @@ dataset = pd.DataFrame(
     columns = columns
 )
 
-like = {c: rng.random(size=(2,)) for c in columns}
+like = {c: likelihoods().from_sens_spec(rng.random(),rng.random()) for c in columns}
 
 for i in results.index:
     for c in columns:
         if results.loc[i]: 
-            dataset.loc[i,c] = rng.random() < like[c][0]
+            dataset.loc[i,c] = rng.random() < like[c].sensitivity
         else:
-            dataset.loc[i,c] = rng.random() < like[c][1]
+            dataset.loc[i,c] = rng.random() > like[c].specificity
         
+
 #%%
-X_train, X_test, Y_train, Y_test = train_test_split(dataset, results, test_size=0.10, random_state=42)
+X_train, X_test, Y_train, Y_test = train_test_split(dataset, results, test_size=0.01, random_state=42)
 CB = CboxBayes()
 CB.fit(X_train,Y_train)
 
 #%%
-Y_pred = CB.predict(X_test,p=0.5)
+# Y_pred = CB.predict(X_test,p=0.5)
 
-fig,ax = plt.subplots(1,1)
-Y_pred[0].show(figax = (fig,ax))
-fig.show()
+# fig,ax = plt.subplots(1,1)
+# Y_pred[0].show(figax = (fig,ax))
+# fig.show()
 #%%
-print(Y_pred[0])
 # %%
 def singh(cboxes,alpha):
     
